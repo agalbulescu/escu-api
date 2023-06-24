@@ -1,15 +1,5 @@
 const axios = require("axios");
-// const { Connection } = require("@solana/web3.js");
-// const { getParsedNftAccountsByOwner } = require("@nfteyez/sol-rayz");
-const Nfts = require("../../models/nfts")
-
-// const endpoint = process.env.CHAINSTACK_SOL;
-// const wsendpoint = process.env.CHAINSTACK_SOL_WS;
-// const config = {
-//     commitment: 'confirmed',
-//     wsEndpoint: wsendpoint
-// };
-// const connection = new Connection(endpoint, config);
+const Nfts = require("../../models/nfts");
 
 const getAllNfts = async (req, res) => {
     const { address } = req.query;
@@ -41,16 +31,12 @@ const getAllNfts = async (req, res) => {
     
     try {
         console.log("STARTING ETH NFT WORKER");
-
         // get parsed NFT list from Moralis
-
         try {
             nftArray = await fetchNftArray(address); 
-            // console.log(nftArray);
         } catch (error) {
             console.log(error);
         }
-
         // look for user in DB
         try {
             const users = await Nfts.find(walletData);
@@ -63,14 +49,12 @@ const getAllNfts = async (req, res) => {
                 userExists = true;
                 userIdFound = users[0]._id;
                 nftsFound = users[0].nfts;
-                // console.log(nftsFound);
                 nftsMetadataFound = users[0].nftsMetadata;
             }
         } catch (error) {
             console.log("The request to find the User in the DB failed altogether, please try again");
             console.log(error);
         }
-
 
         if (userExists) {
             const isArraysEqual = areArraysEqual(nftsFound, nftArray);
@@ -80,7 +64,6 @@ const getAllNfts = async (req, res) => {
             } else {
                 console.log("DB is outdated, updating nfts and metadatas");
                 metadatas = await fetchMetadata(nftArray);
-                // console.log(metadatas);
                 res.status(200).json({"data": metadatas, "success": true});
                 // update DB with new values
                 userData = {...userData, nfts: nftArray, nftsMetadata: metadatas, updatedOn: dateUpdated};
@@ -95,7 +78,6 @@ const getAllNfts = async (req, res) => {
             }
         } else {
             metadatas = await fetchMetadata(nftArray);
-            // console.log(metadatas);
             res.status(200).json({"data": metadatas, "success": true});
             // create user in DB
             userData = {...newUserData, nfts: nftArray, nftsMetadata: metadatas};
@@ -107,10 +89,10 @@ const getAllNfts = async (req, res) => {
                 console.log(error);
             }
         }
-        console.log("STOPPING SOL NFT WORKER");
+        console.log("STOPPING ETH NFT WORKER");
     } catch (err) {
         const out = {
-        error: "SOL NFT Worker: Something went wrong...",
+        error: "ETH NFT Worker: Something went wrong...",
         message: err.message,
         };
         res.status(500).json(out);
@@ -140,28 +122,9 @@ const fetchMetadata = async (nftArray) => {
     return metadatas;
 };
 
-// const fetchMetadataOld = async (nftArray) => {
-//     let metadatas = [];
-//     for (const nft of nftArray) {
-//       try {
-//         await axios.get(nft.data.uri)
-//         .then( async (response) => await response.data)
-//         .then( (meta) => { 
-//           metadatas.push({...meta, ...nft});
-//         });
-//       } catch (error) {
-//         console.log(error);
-//       }
-//     }
-//     return metadatas;
-// };
-
 const fetchNftArray = async (address) => {
-
     let nftArray = [];
-
     try {
-
         const responseRaw = await axios.get(`https://deep-index.moralis.io/api/v2/${address}/nft?chain=0x1`, { 
             headers: {
                 'X-API-KEY': process.env.MORALIS_ID,
@@ -169,17 +132,13 @@ const fetchNftArray = async (address) => {
                 'Content-Type': 'application/json'
             }
         });
-    
         const responseData = await responseRaw.data;
-
         nftArray = responseData.result;
-
         for (let i = 0; i < nftArray.length; i++) {
             if (nftArray[i].metadata === null || (nftArray[i].name === "Ethereum Name Service" && nftArray[i].symbol === "ENS")) {
               nftArray.splice(i, 1);
             }
         }
-
         for (let i = 0; i < nftArray.length; i++) {
             var arrayItem = nftArray[i];
             var metadataItem = arrayItem.metadata;
@@ -187,37 +146,28 @@ const fetchNftArray = async (address) => {
             arrayItem.metadata = metadataItemParsed;
             nftArray.splice(i, 1, arrayItem);
         }
-
         console.log("Found " + nftArray.length + " NFT's in this wallet");
-        
     } catch (error) {
           console.log(error);
     }
-    // console.log(nftArray);
     return nftArray;
-
 }
 
 function areArraysEqual(arr1, arr2) {
     if (arr1.length !== arr2.length) {
       return false;
     }
-  
     const sortedArr1 = arr1.sort((a, b) => (a.token_hash > b.token_hash ? 1 : -1));
     const sortedArr2 = arr2.sort((a, b) => (a.token_hash > b.token_hash ? 1 : -1));
-  
     for (let i = 0; i < sortedArr1.length; i++) {
       const obj1 = sortedArr1[i];
       const obj2 = sortedArr2[i];
-  
       const str1 = JSON.stringify(obj1);
       const str2 = JSON.stringify(obj2);
-  
       if (str1 !== str2) {
         return false;
       }
     }
-  
     return true;
 }
 
