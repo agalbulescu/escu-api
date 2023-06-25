@@ -34,6 +34,7 @@ const getAllNfts = async (req, res) => {
         // get parsed NFT list from Moralis
         try {
             nftArray = await fetchNftArray(address); 
+            // console.log(nftArray);
         } catch (error) {
             console.log(error);
         }
@@ -50,6 +51,7 @@ const getAllNfts = async (req, res) => {
                 userIdFound = users[0]._id;
                 nftsFound = users[0].nfts;
                 nftsMetadataFound = users[0].nftsMetadata;
+                // console.log(nftsFound);
             }
         } catch (error) {
             console.log("The request to find the User in the DB failed altogether, please try again");
@@ -157,16 +159,13 @@ function areArraysEqual(arr1, arr2) {
     if (arr1.length !== arr2.length) {
       return false;
     }
-    const sortedArr1 = arr1.sort((a, b) => (a.token_hash > b.token_hash ? 1 : -1));
-    const sortedArr2 = arr2.sort((a, b) => (a.token_hash > b.token_hash ? 1 : -1));
-    for (let i = 0; i < sortedArr1.length; i++) {
-      const obj1 = sortedArr1[i];
-      const obj2 = sortedArr2[i];
-      const str1 = JSON.stringify(obj1);
-      const str2 = JSON.stringify(obj2);
-      if (str1 !== str2) {
+    const filteredArray1 = arr1.map(item => item.token_hash);
+    const filteredArray2 = arr2.map(item => item.token_hash);
+    filteredArray1.sort();
+    filteredArray2.sort();
+    const arrayEquality = filteredArray1.every((value, index) => value === filteredArray2[index]);
+    if(!arrayEquality) {
         return false;
-      }
     }
     return true;
 }

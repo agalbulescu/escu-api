@@ -143,24 +143,16 @@ const fetchNftArray = async (address) => {
 
 function areArraysEqual(arr1, arr2) {
     if (arr1.length !== arr2.length) {
-      return false;
-    }
-  
-    const sortedArr1 = arr1.sort((a, b) => (a.mint > b.mint ? 1 : -1));
-    const sortedArr2 = arr2.sort((a, b) => (a.mint > b.mint ? 1 : -1));
-  
-    for (let i = 0; i < sortedArr1.length; i++) {
-      const obj1 = sortedArr1[i];
-      const obj2 = sortedArr2[i];
-  
-      const str1 = JSON.stringify(obj1);
-      const str2 = JSON.stringify(obj2);
-  
-      if (str1 !== str2) {
         return false;
-      }
     }
-  
+    const filteredArray1 = arr1.map(item => item.mint);
+    const filteredArray2 = arr2.map(item => item.mint);
+    filteredArray1.sort();
+    filteredArray2.sort();
+    const arrayEquality = filteredArray1.every((value, index) => value === filteredArray2[index]);
+    if(!arrayEquality) {
+        return false;
+    }
     return true;
 }
 
